@@ -45,15 +45,15 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
           <!-- Renovation -->
           <div
             class="h-full bg-emerald-500 transition-all duration-300"
-            [style.width.%]="(inputs().renovationBudget / results().totalProjectCost) * 100"
-            [title]="'Reforma: ' + (inputs().renovationBudget | currencyFormat)"
+            [style.width.%]="(results().renovationResults.totalRenovationCost / results().totalProjectCost) * 100"
+            [title]="'Reforma con impuestos: ' + (results().renovationResults.totalRenovationCost | currencyFormat)"
           ></div>
         </div>
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
           <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded-sm bg-indigo-600 shrink-0"></span>
-            <span class="text-slate-600">Hipoteca: <strong>{{ results().loanCapital | currencyFormat }}</strong></span>
+            <span class="text-slate-600">Hipoteca: <strong>{{ results().totalLoanCapital | currencyFormat }}</strong></span>
           </div>
           <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded-sm bg-indigo-300 shrink-0"></span>
@@ -65,7 +65,7 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
           </div>
           <div class="flex items-center gap-1.5">
             <span class="w-3 h-3 rounded-sm bg-emerald-500 shrink-0"></span>
-            <span class="text-slate-600">Reforma: <strong>{{ inputs().renovationBudget | currencyFormat }}</strong></span>
+            <span class="text-slate-600">Reforma: <strong>{{ results().renovationResults.totalRenovationCost | currencyFormat }}</strong></span>
           </div>
         </div>
       </div>
@@ -108,10 +108,22 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
                 <td class="py-1.5 px-2 text-right text-slate-500">Valoración ECO banco</td>
                 <td class="py-1.5 pl-2 text-right font-semibold text-slate-900">{{ inputs().appraisalFee | currencyFormat }}</td>
               </tr>
-              <tr class="font-bold bg-slate-50/70">
+              <tr class="font-semibold bg-slate-50/70">
                 <td class="py-2 pr-2 text-slate-900">Subtotal Gastos e Impuestos</td>
-                <td class="py-2 px-2 text-right text-slate-500">Total gastos</td>
+                <td class="py-2 px-2 text-right text-slate-500">Escrituración e ITP</td>
                 <td class="py-2 pl-2 text-right text-indigo-700">{{ results().totalPurchaseExpenses | currencyFormat }}</td>
+              </tr>
+              @if (results().renovationResults.totalRenovationCost > 0) {
+                <tr class="text-slate-700">
+                  <td class="py-1.5 pr-2 font-medium">Reforma Integral (con IVA 10% e ICIO 4%)</td>
+                  <td class="py-1.5 px-2 text-right text-slate-500">{{ scenario().inputs.builtSquareMeters || 120 }} m² ({{ results().renovationResults.costPerSqMeterWithTaxes | currencyFormat }}/m²)</td>
+                  <td class="py-1.5 pl-2 text-right font-semibold text-emerald-700">{{ results().renovationResults.totalRenovationCost | currencyFormat }}</td>
+                </tr>
+              }
+              <tr class="font-bold bg-indigo-50/50 border-t-2 border-indigo-200">
+                <td class="py-2.5 pr-2 text-indigo-950 text-sm">Coste Total de la Operación</td>
+                <td class="py-2.5 px-2 text-right text-indigo-700 text-[11px]">Compra + Gastos + Obra</td>
+                <td class="py-2.5 pl-2 text-right font-extrabold text-indigo-950 text-sm">{{ results().totalProjectCost | currencyFormat }}</td>
               </tr>
             </tbody>
           </table>

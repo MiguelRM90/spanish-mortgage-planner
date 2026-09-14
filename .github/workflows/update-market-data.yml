@@ -1,0 +1,35 @@
+name: Sincronización Mensual de Datos de Mercado y Euríbor
+
+on:
+  schedule:
+    # Se ejecuta el día 2 de cada mes a las 06:00 UTC (tras publicación oficial de BdE y BCE)
+    - cron: '0 6 2 * *'
+  workflow_dispatch: # Permite ejecución manual con un clic desde GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ejecutar script ETL de actualización
+        run: |
+          node --experimental-strip-types scripts/update-market-data.ts
+
+      - name: Commit y Push de datos actualizados (si hay cambios)
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/data/guindalera-market-data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore(data): actualización automática mensual de datos de mercado y Euríbor [skip ci]" && git push)
+

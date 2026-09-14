@@ -48,6 +48,17 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
               }
             </tr>
 
+            <!-- Superficie -->
+            <tr class="hover:bg-slate-50/60">
+              <td class="py-2.5 px-4 font-medium text-slate-600">Superficie construida</td>
+              @for (item of scenarios(); track item.id) {
+                <td class="py-2.5 px-4 text-right font-medium" [class.bg-indigo-50/40]="item.id === activeId()">
+                  {{ item.inputs.builtSquareMeters || 120 }} m²
+                  <span class="text-slate-400 text-[10px] block">({{ item.inputs.purchasePrice / (item.inputs.builtSquareMeters || 120) | currencyFormat }}/m²)</span>
+                </td>
+              }
+            </tr>
+
             <!-- Financiación -->
             <tr class="hover:bg-slate-50/60">
               <td class="py-2.5 px-4 font-medium text-slate-600">Financiación (% y Capital)</td>
@@ -143,6 +154,23 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
               @for (item of scenarios(); track item.id) {
                 <td class="py-2.5 px-4 text-right font-semibold text-slate-900" [class.bg-indigo-50/40]="item.id === activeId()">
                   {{ item.results?.netDisposableIncome | currencyFormat:true }} / m
+                </td>
+              }
+            </tr>
+
+            <!-- Plusvalía / Equity Proyectado tras reforma -->
+            <tr class="bg-emerald-50/40 hover:bg-emerald-50/70 font-bold border-y border-emerald-200/50">
+              <td class="py-3 px-4 text-emerald-950">Plusvalía Neta Creada (Equity)</td>
+              @for (item of scenarios(); track item.id) {
+                <td
+                  class="py-3 px-4 text-right font-extrabold text-sm"
+                  [ngClass]="(item.results?.netEquityCreated ?? 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'"
+                  [class.bg-emerald-100/50]="item.id === activeId()"
+                >
+                  {{ (item.results?.netEquityCreated ?? 0) >= 0 ? '+' : '' }}{{ item.results?.netEquityCreated | currencyFormat }}
+                  <span class="text-[10px] block font-semibold text-slate-500">
+                    ({{ item.results?.equityPercentage | number:'1.1-1' }}% s/coste)
+                  </span>
                 </td>
               }
             </tr>

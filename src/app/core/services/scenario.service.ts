@@ -1,4 +1,4 @@
-import { Injectable, signal, computed, effect, inject } from '@angular/core';
+import { Injectable, signal, computed, effect, Optional } from '@angular/core';
 import { MortgageInputs, DEFAULT_MORTGAGE_INPUTS } from '../models/mortgage-inputs.model';
 import { Scenario } from '../models/scenario.model';
 import { MortgageCalculatorService } from './mortgage-calculator.service';
@@ -10,7 +10,7 @@ const STORAGE_KEY_ACTIVE_ID = 'smp_active_id_v1';
   providedIn: 'root',
 })
 export class ScenarioService {
-  private readonly calculator = inject(MortgageCalculatorService);
+  private readonly calculator: MortgageCalculatorService;
 
   public readonly scenarios = signal<Scenario[]>(this.loadInitialScenarios());
   public readonly activeScenarioId = signal<string>(this.loadInitialActiveId());
@@ -41,7 +41,8 @@ export class ScenarioService {
     }));
   });
 
-  constructor() {
+  constructor(@Optional() calculator?: MortgageCalculatorService) {
+    this.calculator = calculator ?? new MortgageCalculatorService();
     // Automatically persist to LocalStorage on changes
     effect(() => {
       const list = this.scenarios();
@@ -188,7 +189,14 @@ export class ScenarioService {
         if (stored) {
           const parsed = JSON.parse(stored);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            return parsed;
+            return parsed.map((s) => ({
+              ...s,
+              inputs: {
+                ...DEFAULT_MORTGAGE_INPUTS,
+                ...s.inputs,
+                builtSquareMeters: s.inputs?.builtSquareMeters ?? 120,
+              },
+            }));
           }
         }
       }
@@ -215,23 +223,29 @@ export class ScenarioService {
   private getDefaultSeedScenarios(): Scenario[] {
     const scenarioA: Scenario = {
       id: 'scenario-seed-1',
-      name: 'Piso A (750k - Base)',
-      notes: 'Escenario base de 750k con reforma de 150k en Madrid',
+      name: 'Piso A (Guindalera - 120 m² reforma)',
+      notes: 'Piso de 120 m² en La Guindalera para reformar a tu gusto (540k compra + reforma integral)',
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      inputs: { ...DEFAULT_MORTGAGE_INPUTS },
+      inputs: {
+        ...DEFAULT_MORTGAGE_INPUTS,
+        purchasePrice: 540000,
+        builtSquareMeters: 120,
+        availableSavings: 310000,
+      },
     };
 
     const scenarioB: Scenario = {
       id: 'scenario-seed-2',
-      name: 'Piso B (680k - Menor reforma)',
-      notes: 'Piso de 680k con reforma menor (40k)',
+      name: 'Piso B (Guindalera - 95 m² reforma)',
+      notes: 'Piso de 95 m² en La Guindalera con reforma media',
       createdAt: Date.now() + 1,
       updatedAt: Date.now() + 1,
       inputs: {
         ...DEFAULT_MORTGAGE_INPUTS,
-        purchasePrice: 680000,
-        renovationBudget: 40000,
+        purchasePrice: 460000,
+        builtSquareMeters: 95,
+        availableSavings: 280000,
       },
     };
 

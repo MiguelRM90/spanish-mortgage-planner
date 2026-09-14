@@ -7,7 +7,7 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
 @Component({
   selector: 'app-expenses-form',
   standalone: true,
-  imports: [CommonModule, NumericSliderInputComponent, CurrencyFormatPipe],
+  imports: [CommonModule, CurrencyFormatPipe],
   template: `
     <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -16,14 +16,14 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
             2
           </div>
           <div>
-            <h2 class="text-sm font-bold text-slate-900">Gastos, Impuestos y Reforma</h2>
-            <p class="text-xs text-slate-500">Impuestos de transmisión, aranceles y obras</p>
+            <h2 class="text-sm font-bold text-slate-900">Gastos e Impuestos de Compraventa</h2>
+            <p class="text-xs text-slate-500">ITP de Madrid (6% o 4%) y aranceles notariales y registrales</p>
           </div>
         </div>
 
         <!-- Subtotal Badge -->
         <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/60">
-          Gastos: {{ results().totalPurchaseExpenses | currencyFormat }}
+          Escrituración: {{ results().totalPurchaseExpenses | currencyFormat }}
         </span>
       </div>
 
@@ -116,19 +116,13 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
         </div>
       </div>
 
-      <!-- Presupuesto estimado de reforma -->
-      <div class="pt-2 border-t border-slate-100">
-        <app-numeric-slider-input
-          label="Presupuesto estimado de reforma"
-          [value]="inputs().renovationBudget"
-          [min]="0"
-          [max]="500000"
-          [step]="5000"
-          unit="€"
-          prefix="€"
-          hint="Coste previsto de obras, adecuación, licencias y mobiliario no financiado por la hipoteca estándar."
-          (valueChange)="onFieldChange('renovationBudget', $event)"
-        />
+      <!-- Resumen Reforma vinculada al bloque 3 -->
+      <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl">
+        <span class="flex items-center gap-1.5">
+          <span>🔨 Reforma estimada (Bloque 3):</span>
+          <span class="font-bold text-slate-800">{{ results().renovationResults.totalRenovationCost | currencyFormat }}</span>
+        </span>
+        <span class="text-[11px] text-indigo-600 font-semibold">Configurable en Bloque 3 ↓</span>
       </div>
     </div>
   `,

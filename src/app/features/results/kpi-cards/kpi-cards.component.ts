@@ -78,8 +78,8 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
             <span class="font-semibold text-slate-700">{{ results().totalPurchaseExpenses | currencyFormat }}</span>
           </div>
           <div class="text-right">
-            <span class="text-slate-400 block text-[10px]">Reforma:</span>
-            <span class="font-semibold text-slate-700">{{ inputs().renovationBudget | currencyFormat }}</span>
+            <span class="text-slate-400 block text-[10px]">Reforma (cash):</span>
+            <span class="font-semibold text-slate-700">{{ results().unfinancedRenovationAmount | currencyFormat }}</span>
           </div>
         </div>
       </div>

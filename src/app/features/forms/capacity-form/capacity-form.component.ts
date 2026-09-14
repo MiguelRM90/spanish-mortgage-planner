@@ -12,8 +12,8 @@ import { CurrencyFormatPipe } from '../../../shared/pipes/currency-format.pipe';
     <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
-            3
+          <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-sm">
+            4
           </div>
           <div>
             <h2 class="text-sm font-bold text-slate-900">Liquidez y Capacidad Familiar</h2>

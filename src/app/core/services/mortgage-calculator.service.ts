@@ -1,15 +1,23 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Optional } from '@angular/core';
 import { MortgageInputs } from '../models/mortgage-inputs.model';
 import { MortgageResults, PaymentDiagnosis, LiquidityDiagnosis } from '../models/mortgage-results.model';
 import { AmortizationPeriod, YearlyAmortizationSummary } from '../models/amortization-schedule.model';
+import { RenovationCalculatorService } from './renovation-calculator.service';
+import { RenovationInputs, RenovationResults } from '../models/renovation.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class MortgageCalculatorService {
+  private readonly renovationCalculator: RenovationCalculatorService;
+
+  constructor(@Optional() renovationCalc?: RenovationCalculatorService) {
+    this.renovationCalculator = renovationCalc ?? new RenovationCalculatorService();
+  }
+
   /**
-   * Calculates comprehensive mortgage metrics and financial diagnostics
-   * according to French amortization standard and Spanish property purchase taxation.
+   * Calculates comprehensive mortgage metrics, renovation costs, taxation (Madrid),
+   * risk diagnostics and equity creation.
    */
   public calculate(inputs: MortgageInputs): MortgageResults {
     const purchasePrice = Math.max(0, inputs.purchasePrice || 0);
@@ -22,39 +30,47 @@ export class MortgageCalculatorService {
     const registryFee = Math.max(0, inputs.registryFee || 0);
     const managementFee = Math.max(0, inputs.managementFee || 0);
     const appraisalFee = Math.max(0, inputs.appraisalFee || 0);
-    const renovationBudget = Math.max(0, inputs.renovationBudget || 0);
 
     const availableSavings = Math.max(0, inputs.availableSavings || 0);
     const annualNetIncome = Math.max(0, inputs.annualNetIncome || 0);
 
-    // 1. Financing outputs
+    // 1. Purchase expenses
+    const itpAmount = purchasePrice * (itpRate / 100);
+    const totalPurchaseExpenses = itpAmount + notaryFee + registryFee + managementFee + appraisalFee;
+
+    // 2. Renovation calculations
+    const renovationResults = this.resolveRenovationResults(inputs, purchasePrice, totalPurchaseExpenses);
+
+    // 3. Financing outputs (Property loan + Optional financed renovation)
     const loanCapital = purchasePrice * (financingPercentage / 100);
+    const financedRenovationAmount = renovationResults.financedRenovationAmount;
+    const totalLoanCapital = loanCapital + financedRenovationAmount;
+
     const totalMonths = Math.round(loanTermYears * 12);
     const monthlyRate = interestRateTin / 100 / 12;
 
     let monthlyPayment = 0;
-    if (loanCapital > 0 && totalMonths > 0) {
+    if (totalLoanCapital > 0 && totalMonths > 0) {
       if (monthlyRate === 0) {
-        monthlyPayment = loanCapital / totalMonths;
+        monthlyPayment = totalLoanCapital / totalMonths;
       } else {
         const factor = Math.pow(1 + monthlyRate, totalMonths);
-        monthlyPayment = (loanCapital * monthlyRate * factor) / (factor - 1);
+        monthlyPayment = (totalLoanCapital * monthlyRate * factor) / (factor - 1);
       }
     }
 
     const totalLoanCost = monthlyPayment * totalMonths;
-    const totalInterest = Math.max(0, totalLoanCost - loanCapital);
+    const totalInterest = Math.max(0, totalLoanCost - totalLoanCapital);
 
-    // 2. Upfront costs and liquidity
-    const itpAmount = purchasePrice * (itpRate / 100);
-    const totalPurchaseExpenses = itpAmount + notaryFee + registryFee + managementFee + appraisalFee;
+    // 4. Upfront costs and liquidity requirements
     const downPayment = purchasePrice - loanCapital;
-    const totalInitialCapitalNeeded = downPayment + totalPurchaseExpenses + renovationBudget;
-    const totalProjectCost = purchasePrice + totalPurchaseExpenses + renovationBudget;
+    const unfinancedRenovationAmount = renovationResults.unfinancedRenovationAmount;
+    const totalInitialCapitalNeeded = downPayment + totalPurchaseExpenses + unfinancedRenovationAmount;
+    const totalProjectCost = purchasePrice + totalPurchaseExpenses + renovationResults.totalRenovationCost;
     const liquidityDifference = availableSavings - totalInitialCapitalNeeded;
     const unfundedInitialCashGap = liquidityDifference < 0 ? Math.abs(liquidityDifference) : 0;
 
-    // 3. Risk Ratios and Diagnosis
+    // 5. Risk Ratios and Diagnostics
     const monthlyNetIncome = annualNetIncome / 12;
     const recommendedDebtLimit = monthlyNetIncome * 0.35;
     const debtToIncomeRatio = monthlyNetIncome > 0 ? (monthlyPayment / monthlyNetIncome) * 100 : 0;
@@ -65,16 +81,23 @@ export class MortgageCalculatorService {
 
     return {
       loanCapital: this.round(loanCapital),
+      totalLoanCapital: this.round(totalLoanCapital),
+      financedRenovationAmount: this.round(financedRenovationAmount),
       monthlyPayment: this.round(monthlyPayment),
       totalInterest: this.round(totalInterest),
       totalLoanCost: this.round(totalLoanCost),
       downPayment: this.round(downPayment),
       itpAmount: this.round(itpAmount),
       totalPurchaseExpenses: this.round(totalPurchaseExpenses),
+      unfinancedRenovationAmount: this.round(unfinancedRenovationAmount),
       totalInitialCapitalNeeded: this.round(totalInitialCapitalNeeded),
       totalProjectCost: this.round(totalProjectCost),
       liquidityDifference: this.round(liquidityDifference),
       unfundedInitialCashGap: this.round(unfundedInitialCashGap),
+      renovationResults,
+      projectedMarketValue: this.round(renovationResults.projectedMarketValue),
+      netEquityCreated: this.round(renovationResults.netEquityCreated),
+      equityPercentage: this.round(renovationResults.equityPercentage),
       monthlyNetIncome: this.round(monthlyNetIncome),
       recommendedDebtLimit: this.round(recommendedDebtLimit),
       debtToIncomeRatio: this.round(debtToIncomeRatio),
@@ -85,10 +108,11 @@ export class MortgageCalculatorService {
   }
 
   /**
-   * Generates the detailed monthly French amortization schedule
+   * Generates the detailed monthly French amortization schedule based on total loan amount
    */
   public generateAmortizationSchedule(inputs: MortgageInputs): AmortizationPeriod[] {
-    const loanCapital = inputs.purchasePrice * (inputs.financingPercentage / 100);
+    const results = this.calculate(inputs);
+    const loanCapital = results.totalLoanCapital;
     const totalMonths = Math.round(inputs.loanTermYears * 12);
     const monthlyRate = inputs.interestRateTin / 100 / 12;
 
@@ -113,7 +137,7 @@ export class MortgageCalculatorService {
       const interestPaid = remainingBalance * monthlyRate;
       let principalPaid = monthlyPayment - interestPaid;
 
-      // Handle final month precision
+      // Final month precision
       if (month === totalMonths || principalPaid > remainingBalance) {
         principalPaid = remainingBalance;
         monthlyPayment = principalPaid + interestPaid;
@@ -168,10 +192,72 @@ export class MortgageCalculatorService {
   }
 
   /**
-   * Helper to round monetary amounts to 2 decimal places safely
+   * Resolves RenovationResults, either from detailed inputs or backwards-compatible renovationBudget.
    */
+  private resolveRenovationResults(
+    inputs: MortgageInputs,
+    purchasePrice: number,
+    purchaseExpenses: number
+  ): RenovationResults {
+    const squareMeters = inputs.builtSquareMeters ?? inputs.renovationDetails?.squareMeters ?? 120;
+    const marketPricePerM2 = inputs.projectedMarketValuePerSqMeter ?? inputs.renovationDetails?.projectedMarketValuePerSqMeter ?? 7300;
+    const financeRenovation = inputs.financeRenovation ?? inputs.renovationDetails?.financeRenovation ?? false;
+    const renovationFinancingPct = inputs.renovationFinancingPercentage ?? inputs.renovationDetails?.renovationFinancingPercentage ?? 0;
+
+    if (inputs.renovationDetails) {
+      const normalizedRenovationInputs: RenovationInputs = {
+        ...inputs.renovationDetails,
+        squareMeters,
+        financeRenovation,
+        renovationFinancingPercentage: renovationFinancingPct,
+        projectedMarketValuePerSqMeter: marketPricePerM2,
+      };
+      return this.renovationCalculator.calculate(normalizedRenovationInputs, purchasePrice, purchaseExpenses);
+    }
+
+    // Fallback if only renovationBudget was provided (e.g. in tests or legacy scenarios)
+    const rawBudget = Math.max(0, inputs.renovationBudget || 0);
+    const projectedMarketValue = squareMeters * marketPricePerM2;
+    const totalOperationCost = purchasePrice + purchaseExpenses + rawBudget;
+    const netEquityCreated = projectedMarketValue - totalOperationCost;
+    const equityPercentage = totalOperationCost > 0 ? (netEquityCreated / totalOperationCost) * 100 : 0;
+
+    let financedRenovationAmount = 0;
+    if (financeRenovation) {
+      financedRenovationAmount = rawBudget * (renovationFinancingPct / 100);
+    }
+    const unfinancedRenovationAmount = rawBudget - financedRenovationAmount;
+
+    return {
+      squareMeters,
+      quality: 'custom',
+      netBaseBudget: this.round(rawBudget / 1.14),
+      vatAmount: this.round((rawBudget / 1.14) * 0.10),
+      icioAmount: this.round((rawBudget / 1.14) * 0.04),
+      totalRenovationCost: this.round(rawBudget),
+      costPerSqMeterWithTaxes: squareMeters > 0 ? this.round(rawBudget / squareMeters) : 0,
+      financedRenovationAmount: this.round(financedRenovationAmount),
+      unfinancedRenovationAmount: this.round(unfinancedRenovationAmount),
+      categoryBreakdown: {
+        demolition: this.round(rawBudget * 0.08),
+        masonryAndPlaster: this.round(rawBudget * 0.15),
+        electrical: this.round(rawBudget * 0.10),
+        plumbing: this.round(rawBudget * 0.08),
+        hvac: this.round(rawBudget * 0.14),
+        windows: this.round(rawBudget * 0.12),
+        kitchen: this.round(rawBudget * 0.13),
+        bathrooms: this.round(rawBudget * 0.09),
+        flooring: this.round(rawBudget * 0.06),
+        painting: this.round(rawBudget * 0.05),
+      },
+      projectedMarketValue: this.round(projectedMarketValue),
+      totalOperationCost: this.round(totalOperationCost),
+      netEquityCreated: this.round(netEquityCreated),
+      equityPercentage: this.round(equityPercentage),
+    };
+  }
+
   private round(value: number): number {
     return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }
-

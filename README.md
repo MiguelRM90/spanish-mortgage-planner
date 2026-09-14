@@ -140,8 +140,14 @@ pnpm start
 # Ejecutar suite de pruebas unitarias (Vitest)
 pnpm test
 
-# Sincronizar datos de mercado y Euríbor manualmente
+# Sincronizar datos de Euríbor automáticamente desde el BCE
 pnpm run update-data
+
+# Añadir un nuevo trimestre de precios de Guindalera de forma guiada/interactiva
+pnpm run add-quarter
+
+# O añadir nuevo trimestre directamente con parámetros de una línea
+pnpm run update-data --real 7180 --asking 7850
 
 # Compilar para producción
 pnpm build

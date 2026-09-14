@@ -23,12 +23,10 @@ import { CommonModule } from '@angular/common';
           </span>
         } @else if (unit() === '%') {
           <span class="text-xs font-medium text-slate-500">
-            {{ value() | number:'1.1-2' }} %
+            {{ value() | number: '1.1-2' }} %
           </span>
         } @else if (unit()) {
-          <span class="text-xs font-medium text-slate-500">
-            {{ value() }} {{ unit() }}
-          </span>
+          <span class="text-xs font-medium text-slate-500"> {{ value() }} {{ unit() }} </span>
         }
       </div>
 
@@ -41,11 +39,11 @@ import { CommonModule } from '@angular/common';
 
         <input
           type="number"
-          [value]="value()"
-          (input)="onInputChange($event)"
           [min]="min()"
           [max]="max()"
           [step]="step()"
+          [value]="value()"
+          (input)="onInputChange($event)"
           [class.pl-7]="prefix()"
           [class.pr-8]="suffix()"
           class="w-full h-10 px-3 text-sm font-semibold text-slate-800 bg-white border border-slate-200 rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
@@ -62,11 +60,11 @@ import { CommonModule } from '@angular/common';
         <div class="pt-1 px-1">
           <input
             type="range"
-            [value]="value()"
-            (input)="onSliderChange($event)"
             [min]="min()"
             [max]="max()"
             [step]="step()"
+            [value]="value()"
+            (input)="onSliderChange($event)"
             class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-hidden"
           />
           <div class="flex justify-between text-[10px] text-slate-400 font-medium px-0.5">
@@ -130,4 +128,3 @@ export class NumericSliderInputComponent {
     return `${this.max()}${this.unit() ? ' ' + this.unit() : ''}`;
   }
 }
-

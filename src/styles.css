@@ -1,23 +1,28 @@
-@import "tailwindcss";
+@import "pwa-ui-core/styles";
 
-@layer base {
-  html {
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
+:root {
+  --pwa-brand-500: #4f46e5;
+  --pwa-brand-600: #4338ca;
 }
 
-/* Custom scrollbars for tables and dashboard panels */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.smp-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--pwa-bg-canvas);
+  color: var(--pwa-text-primary);
+  font-family: var(--pwa-font-sans);
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+.smp-main {
+  flex: 1;
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.6);
+
+.smp-footer {
+  background-color: var(--pwa-bg-surface);
+  border-top: 1px solid var(--pwa-border);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: var(--pwa-text-xs);
+  color: var(--pwa-text-muted);
 }

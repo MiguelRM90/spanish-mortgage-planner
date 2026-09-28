@@ -6,21 +6,7 @@ import { PwaNumericSliderComponent } from 'pwa-ui-core/components';
   selector: 'app-numeric-slider-input',
   standalone: true,
   imports: [CommonModule, PwaNumericSliderComponent],
-  template: `
-    <pwa-numeric-slider
-      [label]="label()"
-      [value]="value()"
-      [min]="min()"
-      [max]="max()"
-      [step]="step()"
-      [unit]="unit()"
-      [prefix]="prefix()"
-      [suffix]="suffix()"
-      [hint]="hint()"
-      [showSlider]="showSlider()"
-      (valueChange)="valueChange.emit($event)"
-    />
-  `,
+  templateUrl: './numeric-slider-input.component.html',
 })
 export class NumericSliderInputComponent {
   public readonly label = input.required<string>();

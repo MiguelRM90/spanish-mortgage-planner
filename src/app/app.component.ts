@@ -6,7 +6,7 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
   selector: 'app-root',
   standalone: true,
   imports: [HeaderComponent, DashboardComponent],
-  templateUrl: './app.html',
-  styleUrl: './app.css',
+  templateUrl: './app.component.html',
+  styleUrl: './app.component.css',
 })
-export class App {}
+export class AppComponent {}
